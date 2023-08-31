@@ -1,0 +1,13 @@
+openttd-opengfx for Debian
+--------------------------
+
+This package simply contains the OpenGFX data in
+/usr/share/games/openttd/baseset. If you have installed OpenTTD using a
+Debian package (including those from the official OpenTTD site), it
+should work out of the box.
+
+If you have another graphics set installed (like the original Transport
+Tycoon Deluxe graphics), you can make OpenTTD switch between them using
+the "Base graphics set" dropdown in the "Game options" menu.
+
+ -- Matthijs Kooijman <matthijs@stdin.nl>  Thu, 28 Jan 2010 23:40:17 +0100

@@ -1,4 +1,75 @@
 #!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# Make sure that gimp doesn't read or write data into $HOME/.gimp-2.6 or
+# elsewhere
+export GIMP2_DIRECTORY=$(CURDIR)/build-data/gimp-data
+export GIMP3_DIRECTORY=$(CURDIR)/build-data/gimp-data
+export XDG_DATA_HOME=$(CURDIR)/build-data/share
+export XDG_CACHE_HOME=$(CURDIR)/build-data/cache
+export XDG_CONFIG_HOME=$(CURDIR)/build-data/config
 
 %:
 	dh $@
+
+INSTALL_ROOT=debian/openttd-opengfx
+DATA_DIR=usr/share/games/openttd/baseset/opengfx
+DOC_DIR=/usr/share/doc/openttd-opengfx
+
+
+OPTIONS=
+OPTIONS += "INSTALL_DIR=$(INSTALL_ROOT)/$(DATA_DIR)"
+ifeq (,$(filter terse,$(DEB_BUILD_OPTIONS)))
+# By default, _V is set to @ to suppress commands, clear it to *show*
+# commands.
+OPTIONS += "_V="
+endif
+OPTIONS += "PYTHON=python3"
+
+override_dh_auto_build:
+	# Remove all graphics files that can be rebuilt (from gimp xcf
+	# files).
+	make clean-gfx $(OPTIONS)
+	# Then rebuild everything
+	make grf $(OPTIONS)
+	# This checks whether the checksums of the resulting grf files
+	# match the official build. They should usually match, but it is
+	# ok if not (e.g.  for different nml versions), so just show the
+	# results but do not error out on a mismatch.
+	make check $(OPTIONS) || true
+
+override_dh_auto_install:
+	make install $(OPTIONS)
+	# Verify that the license.txt that was installed is equal to the
+	# GPL-2 common license and then just link to that one instead
+	diff -q /usr/share/common-licenses/GPL-2 $(INSTALL_ROOT)/$(DATA_DIR)/license.txt
+	dh_link usr/share/common-licenses/GPL-2 $(DATA_DIR)/license.txt
+
+override_dh_installdocs:
+	dh_installdocs README.md
+	# Save space by linking identical files, but check equality first
+	diff -q $(INSTALL_ROOT)/$(DOC_DIR)/README.md $(INSTALL_ROOT)/$(DATA_DIR)/readme.txt
+	dh_link $(DOC_DIR)/README.md $(DATA_DIR)/readme.txt
+
+override_dh_installchangelogs:
+	dh_installchangelogs changelog.txt
+	# Save space by linking identical files, but check equality first
+	diff -q $(INSTALL_ROOT)/$(DOC_DIR)/changelog $(INSTALL_ROOT)/$(DATA_DIR)/changelog.txt
+	dh_link $(DOC_DIR)/changelog $(DATA_DIR)/changelog.txt
+
+override_dh_auto_test:
+	# This defaults to running make check, which is not a test
+	# suite, so override to do nothing.
+
+override_dh_auto_clean:
+	make distclean $(OPTIONS)
+	# Remove any data created by gimp
+	rm -rf "$(GIMP2_DIRECTORY)"
